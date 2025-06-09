@@ -1,6 +1,6 @@
 # 🐳 Docker Compose Updater – by JOTIBI
 
-Kleines Bash-Script zum einfachen Updaten von Docker Compose Containern im JOTIBI-Stil.
+Kleines Bash-Script zum einfachen Updaten von Docker Compose Containern.
 
 ## ▶️ Nutzung
 
