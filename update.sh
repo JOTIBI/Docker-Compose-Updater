@@ -4,7 +4,7 @@
 # Developed and proudly powered by JOTIBI
 
 # ========== DEPENDENCY CHECK ==========
-REQUIRED_CMDS=(docker docker-compose)
+REQUIRED_CMDS=(docker)
 MISSING=()
 
 for CMD in "${REQUIRED_CMDS[@]}"; do
@@ -13,15 +13,24 @@ for CMD in "${REQUIRED_CMDS[@]}"; do
   fi
 done
 
+# Check for docker compose variants
+if command -v docker-compose &>/dev/null; then
+  COMPOSE_CMD="docker-compose"
+elif docker compose version &>/dev/null; then
+  COMPOSE_CMD="docker compose"
+else
+  MISSING+=("docker-compose or docker compose")
+fi
+
 if [ ${#MISSING[@]} -ne 0 ]; then
-  echo "The following required tools are missing: ${MISSING[*]}"
-  read -p "Do you want to install them now? (y/n): " INSTALL_CHOICE
+  echo "Fehlende Tools: ${MISSING[*]}"
+  read -p "Jetzt installieren? (y/n): " INSTALL_CHOICE
   INSTALL_CHOICE=${INSTALL_CHOICE:-n}
   if [[ "$INSTALL_CHOICE" =~ ^[Yy]$ ]]; then
     apt update
-    apt install -y "${MISSING[@]}"
+    apt install -y docker docker-compose
   else
-    echo "Please install the missing packages and rerun the script."
+    echo "Bitte installiere die fehlenden Tools manuell."
     exit 1
   fi
 fi
@@ -43,32 +52,31 @@ EOF
 
 # Ask for path
 while true; do
-  read -p "Enter the Docker Compose project directory (default: ./): " PROJECT_PATH
+  read -p "Pfad zum Docker Compose Projekt (default: ./): " PROJECT_PATH
   PROJECT_PATH=${PROJECT_PATH:-./}
   if [ -f "$PROJECT_PATH/docker-compose.yml" ]; then
     break
   else
-    echo "No docker-compose.yml found in '$PROJECT_PATH'. Try again."
+    echo "Keine docker-compose.yml gefunden. Bitte erneut versuchen."
   fi
 done
 
 cd "$PROJECT_PATH" || exit 1
 
-# Confirm update
-read -p "Proceed to update containers in '$PROJECT_PATH'? (y/n): " CONFIRM
+read -p "Container im Pfad '$PROJECT_PATH' jetzt updaten? (y/n): " CONFIRM
 CONFIRM=${CONFIRM:-y}
 if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
-  echo "Aborted by user."
+  echo "Abgebrochen."
   exit 0
 fi
 
-echo "Pulling latest images..."
-docker compose pull
+echo "🔄 Images aktualisieren..."
+$COMPOSE_CMD pull
 
-echo "Stopping containers..."
-docker compose down
+echo "🛑 Container stoppen..."
+$COMPOSE_CMD down
 
-echo "Starting updated containers..."
-docker compose up -d
+echo "🚀 Container starten..."
+$COMPOSE_CMD up -d
 
-echo "==== Update completed successfully! ===="
+echo "✅ Update abgeschlossen!"
